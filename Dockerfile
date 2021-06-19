@@ -47,4 +47,6 @@ COPY gsifw.html .
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 COPY --from=builder /bin/smg /bin/smg
 
+EXPOSE 8080
+
 ENTRYPOINT [ "/bin/smg" ]
