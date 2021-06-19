@@ -7,7 +7,9 @@ SHELL [ "/bin/bash", "-euo", "pipefail", "-c" ]
 RUN apt-get update \
   && apt-get install --assume-yes --no-install-recommends ca-certificates \
   && apt-get autoremove --assume-yes \
-  && rm --force --recursive /root/.cache
+  && apt-get clean \
+  && rm --force --recursive /root/.cache \
+  && rm --force --recursive /var/lib/apt/lists/*
 
 # Don't call any C code (the 'scratch' base image used later won't have any libraries to reference)
 ENV CGO_ENABLED=0
