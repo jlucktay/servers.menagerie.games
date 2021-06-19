@@ -33,7 +33,7 @@ func main() {
 	clientID = flag.String("client-id", os.Getenv("GOOGLE_CLIENT_ID"), "Google Client ID")
 
 	// default address to localhost for development
-	address := flag.String("server-address", "localhost:8080", "Server address to listen on")
+	address := flag.String("server-address", ":8080", "Server address to listen on")
 
 	// Lock 'em in
 	flag.Parse()
