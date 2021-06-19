@@ -1,0 +1,14 @@
+# Metadata
+.dockerignore
+.git/
+.github/
+.gitignore
+
+# Build and binary files
+Dockerfile
+smg
+
+# Makefile things
+/hack/bin/
+/out/
+/tmp/

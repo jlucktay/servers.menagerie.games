@@ -1,4 +1,4 @@
-module go.jlucktay.dev/golang-workbench/gsifw
+module go.jlucktay.dev/servers.menagerie.games
 
 go 1.15
 

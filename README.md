@@ -1,6 +1,6 @@
 # Google Sign-In for Websites
 
-[![godoc](https://img.shields.io/badge/pkg.go.dev-godoc-00ADD8?logo=go)](https://pkg.go.dev/go.jlucktay.dev/golang-workbench/gsifw)
+[![godoc](https://img.shields.io/badge/pkg.go.dev-godoc-00ADD8?logo=go)](https://pkg.go.dev/go.jlucktay.dev/gsifw)
 
 ## Google Cloud - Cloud Functions
 
