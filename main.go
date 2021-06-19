@@ -85,7 +85,17 @@ func main() {
 
 func setupRouter() *chi.Mux {
 	r := chi.NewRouter()
-	r.Use(middleware.Logger)
+	r.Use(middleware.RequestID)
+	// r.Use(middleware.RealIP) // TODO: look into security implications
+	r.Use(middleware.Logger) // look at https://github.com/goware/httplog as well
+	r.Use(middleware.Recoverer)
+
+	// Set a timeout value on the request context (ctx), that will signal through ctx.Done() that the request has timed
+	// out and further processing should be stopped.
+	r.Use(middleware.Timeout(time.Second * 10))
+
+	r.Use(middleware.Heartbeat("/ping"))
+	r.Use(middleware.Throttle(100))
 
 	r.Get("/favicon.ico", faviconHandler)
 	r.Get("/", rootPageHandler)
