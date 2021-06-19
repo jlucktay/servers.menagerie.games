@@ -39,6 +39,10 @@ RUN go build -ldflags="-buildid= -w" -trimpath -v -o /bin/smg
 
 FROM scratch AS runner
 
+# Bring in HTML file
+WORKDIR /
+COPY gsifw.html .
+
 # Bring common CA certificates and binary over
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 COPY --from=builder /bin/smg /bin/smg
