@@ -58,17 +58,17 @@ clean-all: clean clean-docker clean-hack ## Clean all of the things.
 .PHONY: clean-all
 
 # Tests - re-run if any Go files have changes since tmp/.tests-passed.sentinel was last touched.
-tmp/.tests-passed.sentinel: $(shell find . -type f -iname "*.go")
+tmp/.tests-passed.sentinel: $(shell find . -type f -iname "*.go") go.mod go.sum
 > mkdir -p $(@D)
 > go test ./...
 > touch $@
 
-tmp/.cover-tests-passed.sentinel: $(shell find . -type f -iname "*.go")
+tmp/.cover-tests-passed.sentinel: $(shell find . -type f -iname "*.go") go.mod go.sum
 > mkdir -p $(@D)
 > go test -count=1 -covermode=atomic -coverprofile=cover.out -race ./...
 > touch $@
 
-tmp/.benchmarks-ran.sentinel: $(shell find . -type f -iname "*.go")
+tmp/.benchmarks-ran.sentinel: $(shell find . -type f -iname "*.go") go.mod go.sum
 > mkdir -p $(@D)
 > go test ./... -bench=. -benchmem -benchtime=10s -run=DoNotRunTests
 > touch $@
