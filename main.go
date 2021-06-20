@@ -54,8 +54,14 @@ func main() {
 		audience += audienceSuffix
 	}
 
-	srv := http.Server{Addr: *address, Handler: setupRouter()}
+	srv := http.Server{
+		Addr:         *address,
+		Handler:      setupRouter(),
+		ReadTimeout:  time.Second * 10,
+		WriteTimeout: time.Second * 10,
+	}
 
+	// Set up handling for interrupt signal (CTRL+C)
 	idleConnsClosed := make(chan struct{})
 	go func() {
 		sigint := make(chan os.Signal, 1)
@@ -71,6 +77,7 @@ func main() {
 		close(idleConnsClosed)
 	}()
 
+	// Start server listening
 	log.Printf("server listening on '%s'...", srv.Addr)
 
 	if err := srv.ListenAndServe(); err != http.ErrServerClosed {
@@ -78,6 +85,7 @@ func main() {
 		return
 	}
 
+	// Wait for idle connections to close
 	<-idleConnsClosed
 
 	log.Print("server has been shutdown, and all (idle) connections closed")
@@ -111,7 +119,6 @@ func faviconHandler(w http.ResponseWriter, r *http.Request) {
 func rootPageHandler(w http.ResponseWriter, _ *http.Request) {
 	rootPage, err := prepareGSIFWBytes(tpl, *clientID)
 	if err != nil {
-		// return nil, err
 		return
 	}
 
@@ -120,8 +127,8 @@ func rootPageHandler(w http.ResponseWriter, _ *http.Request) {
 			http.StatusText(http.StatusInternalServerError), err)
 		http.Error(w, resp.Error(), http.StatusInternalServerError)
 		log.Println(resp)
-		return
 
+		return
 	}
 }
 
