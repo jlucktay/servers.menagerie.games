@@ -26,6 +26,8 @@ var (
 	audience string
 	clientID *string
 	tpl      *template.Template
+
+	authorisedSubjects = map[string]struct{}{}
 )
 
 func main() {
@@ -112,9 +114,27 @@ func setupRouter() *chi.Mux {
 	r.Use(middleware.Heartbeat("/ping"))
 	r.Use(middleware.Throttle(100))
 
-	r.Get("/favicon.ico", faviconHandler)
-	r.Get("/", rootPageHandler)
-	r.Post("/tokensignin", tokenSignIn)
+	r.Get("/favicon.ico", faviconHandler) // GET /favicon.ico
+	r.Get("/", rootPageHandler)           // GET /
+	r.Post("/tokensignin", tokenSignIn)   // POST /tokensignin
+
+	r.Route("/manage", func(r chi.Router) {
+		r.Use(authorisedOnly)
+
+		r.Get("/", func(w http.ResponseWriter, r *http.Request) { // GET /manage
+			_, err := w.Write([]byte("GET /manage"))
+			if err != nil {
+				log.Print(err)
+			}
+		})
+
+		r.Post("/", func(w http.ResponseWriter, r *http.Request) { // POST /manage
+			_, err := w.Write([]byte("POST /manage"))
+			if err != nil {
+				log.Print(err)
+			}
+		})
+	})
 
 	return r
 }
@@ -205,6 +225,22 @@ func tokenSignIn(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	w.Header().Set("Content-Type", "text/plain")
+
+	http.SetCookie(w, &http.Cookie{
+		Name:  "token",
+		Value: idToken[0],
+
+		// Google ID tokens last one hour
+		Expires: time.Now().Add(time.Hour),
+		MaxAge:  60 * 60,
+
+		HttpOnly: true,
+		Secure:   true,
+
+		SameSite: http.SameSiteStrictMode,
+	})
+
 	if _, err := w.Write([]byte(sEmail)); err != nil {
 		resp := fmt.Errorf("%s: could not write bytes to ResponseWriter: %w",
 			http.StatusText(http.StatusInternalServerError), err)
@@ -264,8 +300,6 @@ func verifyIntegrity(idToken string) (*idtoken.Payload, error) {
 		that matches your G Suite domain name.
 	*/
 
-	// TODO: allowlist based on Google account ID
-
 	// Everything checks out!
 
 	// Log the subject and (alphabetised) claims from the ID token
@@ -288,4 +322,36 @@ func verifyIntegrity(idToken string) (*idtoken.Payload, error) {
 	log.Printf("verified token for subject '%s'; claims: %s", idtPayload.Subject, strings.Join(claimValues, ","))
 
 	return idtPayload, nil
+}
+
+func authorisedOnly(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Get cookie containing JWT
+		cToken, err := r.Cookie("token")
+		if err != nil {
+			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+			log.Printf("could not get token cookie: %v", err)
+
+			return
+		}
+
+		// Run it through verifyIntegrity
+		idtp, err := verifyIntegrity(cToken.Value)
+		if err != nil {
+			http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
+			log.Printf("error verifying token integrity: %v", err)
+
+			return
+		}
+
+		// Allowlist based on Google account ID
+		if _, authorised := authorisedSubjects[idtp.Subject]; !authorised {
+			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+			log.Printf("error verifying token integrity: %v", err)
+
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
 }

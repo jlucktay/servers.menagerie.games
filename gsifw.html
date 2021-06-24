@@ -15,6 +15,9 @@
         xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
         xhr.onload = function () {
           console.log("Signed in as: " + xhr.responseText);
+
+          // Go to 'logged in' area
+          window.location.href = "/manage"; // relative to domain
         };
 
         // Pass the ID token to the backend
@@ -28,6 +31,9 @@
         var auth2 = gapi.auth2.getAuthInstance();
         auth2.signOut().then(function () {
           console.log("User signed out.");
+
+          // Go to 'logged out' area/front page
+          window.location.href = "/"; // relative to domain
         });
       }
     </script>
