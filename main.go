@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"context"
-	"flag"
 	"fmt"
 	"html/template"
 	"log"
@@ -16,6 +15,8 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/spf13/pflag"
+	"github.com/spf13/viper"
 	"github.com/yosssi/gohtml"
 	"google.golang.org/api/idtoken"
 )
@@ -24,15 +25,23 @@ const audienceSuffix = ".apps.googleusercontent.com"
 
 var (
 	audience string
-	clientID *string
 	tpl      *template.Template
 
-	authorisedSubjects = map[string]struct{}{}
+	authorisedSubjects = make([]string, 0)
 )
 
 func main() {
-	// default credential flag to env var
-	clientID = flag.String("client-id", os.Getenv("GOOGLE_CLIENT_ID"), "Google Client ID")
+	viper.SetEnvPrefix("smg")
+	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+	viper.AutomaticEnv()
+
+	if err := viper.BindEnv("auth_sub"); err != nil {
+		log.Fatalf("could not bind to 'SMG_AUTH_SUB' env var: %v", err)
+	}
+
+	if err := viper.BindEnv("google_client_id"); err != nil {
+		log.Fatalf("could not bind to 'SMG_GOOGLE_CLIENT_ID' env var: %v", err)
+	}
 
 	// Determine port for HTTP service.
 	// https://cloud.google.com/run/docs/reference/container-contract#port
@@ -41,30 +50,46 @@ func main() {
 		port = "8080"
 	}
 
-	// default address to localhost for development
-	address := flag.String("server-address", ":"+port, "Server address to listen on")
+	// Set up address flag using port from above
+	pflag.String("address", ":"+port, "Server address to listen on")
 
-	// Lock 'em in
-	flag.Parse()
+	// Lock 'em in and bind 'em
+	pflag.Parse()
 
-	// Prepare the login page template
-	tpl = template.Must(template.New("gsifw.html").ParseFiles("gsifw.html"))
+	if err := viper.BindPFlags(pflag.CommandLine); err != nil {
+		log.Fatalf("could not bind pflags: %v", err)
+	}
 
-	if *clientID == "" {
-		log.Print("missing Google Client ID; set GOOGLE_CLIENT_ID in env or '--client-id' flag")
+	// SMG_AUTH_SUB should be set in the environment like so:
+	// $ export SMG_AUTH_SUB="one two three"
+	// This will authorise three different subjects.
+	authorisedSubjects = viper.GetStringSlice("auth_sub")
+	if len(authorisedSubjects) == 0 {
+		log.Print("no authorised subjects defined; set SMG_AUTH_SUB in env")
+
 		return
 	}
 
-	audience = *clientID
+	log.Printf("%d authorised subject(s): %+v", len(authorisedSubjects), authorisedSubjects)
 
-	if strings.HasSuffix(*clientID, audienceSuffix) {
-		*clientID = strings.TrimSuffix(*clientID, audienceSuffix)
+	if viper.GetString("google_client_id") == "" {
+		log.Print("missing Google Client ID; set SMG_GOOGLE_CLIENT_ID in env")
+
+		return
+	}
+
+	// Prepare the login page template
+	tpl = template.Must(template.New("gsifw.html").ParseFiles("gsifw.html"))
+	audience = viper.GetString("google_client_id")
+
+	if strings.HasSuffix(viper.GetString("google_client_id"), audienceSuffix) {
+		viper.Set("google_client_id", strings.TrimSuffix(viper.GetString("google_client_id"), audienceSuffix))
 	} else {
 		audience += audienceSuffix
 	}
 
 	srv := http.Server{
-		Addr:         *address,
+		Addr:         viper.GetString("address"),
 		Handler:      setupRouter(),
 		ReadTimeout:  time.Second * 10,
 		WriteTimeout: time.Second * 10,
@@ -144,7 +169,7 @@ func faviconHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func rootPageHandler(w http.ResponseWriter, _ *http.Request) {
-	rootPage, err := prepareGSIFWBytes(tpl, *clientID)
+	rootPage, err := prepareGSIFWBytes(tpl, viper.GetString("google_client_id"))
 	if err != nil {
 		return
 	}
@@ -302,24 +327,8 @@ func verifyIntegrity(idToken string) (*idtoken.Payload, error) {
 
 	// Everything checks out!
 
-	// Log the subject and (alphabetised) claims from the ID token
-	claimKeys := make([]string, 0)
-
-	for key := range idtPayload.Claims {
-		claimKeys = append(claimKeys, key)
-
-		if !sort.StringsAreSorted(claimKeys) {
-			sort.Strings(claimKeys)
-		}
-	}
-
-	claimValues := make([]string, 0)
-
-	for _, key := range claimKeys {
-		claimValues = append(claimValues, fmt.Sprintf("%s=%v", key, idtPayload.Claims[key]))
-	}
-
-	log.Printf("verified token for subject '%s'; claims: %s", idtPayload.Subject, strings.Join(claimValues, ","))
+	// Log the subject (and their email address) from the ID token
+	log.Printf("verified token for subject '%s' (email: '%s')", idtPayload.Subject, idtPayload.Claims["email"])
 
 	return idtPayload, nil
 }
@@ -345,9 +354,15 @@ func authorisedOnly(next http.Handler) http.Handler {
 		}
 
 		// Allowlist based on Google account ID
-		if _, authorised := authorisedSubjects[idtp.Subject]; !authorised {
+		if !sort.StringsAreSorted(authorisedSubjects) {
+			sort.Strings(authorisedSubjects)
+		}
+
+		i := sort.SearchStrings(authorisedSubjects, idtp.Subject)
+
+		if i >= len(authorisedSubjects) || authorisedSubjects[i] != idtp.Subject {
 			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
-			log.Printf("error verifying token integrity: %v", err)
+			log.Printf("subject is not authorised: %s", idtp.Subject)
 
 			return
 		}
