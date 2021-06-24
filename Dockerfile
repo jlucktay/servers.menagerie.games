@@ -25,6 +25,7 @@ WORKDIR /go/src/go.jlucktay.dev/servers.menagerie.games
 
 # This will save Go dependencies in the Docker cache, until/unless they change
 COPY go.mod go.sum ./
+RUN go mod download -x
 
 # Download and precompile all third party libraries
 RUN go mod graph \
