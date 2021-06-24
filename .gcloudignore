@@ -1,0 +1,4 @@
+/.editorconfig
+/.github/
+/.hadolint.yaml
+/hack
