@@ -26,9 +26,9 @@ WORKDIR /go/src/go.jlucktay.dev/servers.menagerie.games
 # This will save Go dependencies in the Docker cache, until/unless they change
 COPY go.mod go.sum ./
 
-# Download and precompile all third party libraries (genproto will be dealt with indirectly)
+# Download and precompile all third party libraries
 RUN go mod graph \
-  | awk '$1 !~ "@" && $2 !~ "^google.golang.org/genproto@" { print $2 }' \
+  | awk '$1 !~ "@" { print $2 }' \
   | xargs --max-args=1 --no-run-if-empty --verbose \
   go get -ldflags="-buildid= -w" -trimpath -v
 
