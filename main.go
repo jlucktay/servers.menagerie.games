@@ -32,8 +32,15 @@ func main() {
 	// default credential flag to env var
 	clientID = flag.String("client-id", os.Getenv("GOOGLE_CLIENT_ID"), "Google Client ID")
 
+	// Determine port for HTTP service.
+	// https://cloud.google.com/run/docs/reference/container-contract#port
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+
 	// default address to localhost for development
-	address := flag.String("server-address", ":8080", "Server address to listen on")
+	address := flag.String("server-address", ":"+port, "Server address to listen on")
 
 	// Lock 'em in
 	flag.Parse()
