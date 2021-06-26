@@ -20,12 +20,17 @@ ifeq ($(origin .RECIPEPREFIX), undefined)
 endif
 .RECIPEPREFIX = >
 
+# Bring in variables from .env file
+include .env
+
 binary_name ?= smg
-image_repository ?= jlucktay/$(shell basename $(CURDIR))
+gcp_project ?= $(CLOUDSDK_CORE_PROJECT)
+gcp_region ?= $(CLOUDSDK_RUN_REGION)
+image_repository ?= gcr.io/$(gcp_project)/$(shell basename $(CURDIR))
 
 # Adjust the width of the first column by changing the '-20s' value in the printf pattern.
 help:
-> @grep -E '^[a-zA-Z0-9_-]+:.*? ## .*$$' $(MAKEFILE_LIST) | sort \
+> @grep -E '^[a-zA-Z0-9_-]+:.*? ## .*$$' $(filter-out .env, $(MAKEFILE_LIST)) | sort \
 > | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
 .PHONY: help
 
@@ -36,7 +41,9 @@ bench: tmp/.benchmarks-ran.sentinel ## Run enough iterations of each benchmark t
 lint: tmp/.linted.sentinel ## Lint the Dockerfile and all of the Go code. Will also test.
 build: out/image-id ## [DEFAULT] Build the Docker image. Will also test and lint.
 build-binary: $(binary_name) ## Build a bare binary only, without a Docker image wrapped around it.
-.PHONY: all test test-cover bench lint build build-binary
+build-cloud: tmp/.cloud-built.sentinel ## Build the image with Google Cloud Build.
+deploy: tmp/.cloud-deployed.sentinel ## Deploy the image in Google Container Registry to Cloud Run.
+.PHONY: all test test-cover bench lint build build-binary build-cloud deploy
 
 clean: ## Clean up the built binary, test coverage, and the temp and output sub-directories.
 > go clean -x -v
@@ -102,3 +109,20 @@ out/image-id: Dockerfile tmp/.linted.sentinel
 
 $(binary_name): tmp/.linted.sentinel
 > go build -ldflags="-buildid= -w" -trimpath -v -o $(binary_name)
+
+tmp/.cloud-built.sentinel: Dockerfile tmp/.linted.sentinel .gcloudignore
+> mkdir -p $(@D)
+> gcloud builds submit \
+>   --project="$(gcp_project)" \
+>   --tag="$(image_repository)"
+> touch $@
+
+tmp/.cloud-deployed.sentinel: tmp/.cloud-built.sentinel .gcloudignore
+> mkdir -p $(@D)
+> gcloud run deploy $(binary_name) \
+>   --allow-unauthenticated \
+>   --image="$(image_repository)" \
+>   --project="$(gcp_project)" \
+>   --region="$(gcp_region)" \
+>   --set-env-vars=SMG_AUTH_SUB="$(AUTH_SUB)",SMG_GOOGLE_CLIENT_ID="$(GOOGLE_CLIENT_ID)"
+> touch $@
