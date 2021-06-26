@@ -100,8 +100,9 @@ func main() {
 
 		log.Print("interrupt signal received; server beginning graceful shutdown")
 
+		// Start http shutdown
 		if err := httpServer.Shutdown(context.Background()); err != nil {
-			log.Printf("error during shutdown: %v", err)
+			log.Fatalf("error during shutdown: %v", err)
 		}
 
 		close(idleConnsClosed)
@@ -111,7 +112,7 @@ func main() {
 	log.Printf("server listening on '%s'...", httpServer.Addr)
 
 	if err := httpServer.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-		log.Printf("error starting or closing listener: %v", err)
+		log.Printf("error from listener: %v", err)
 
 		return
 	}
