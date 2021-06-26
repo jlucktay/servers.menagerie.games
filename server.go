@@ -1,46 +1,40 @@
 package main
 
 import (
-	"time"
-
 	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
 	"github.com/spf13/viper"
+	"google.golang.org/api/idtoken"
 )
 
-type server struct {
-	cfg    serverConfig
-	router *chi.Mux
+// Server holds all of the pertinent components needed for running the app.
+type Server struct {
+	Router *chi.Mux
+
+	// TokenVerifier describes a func signature that will verify tokens (for specified audiences) passed in, and return
+	// an initialised/parsed ID token.
+	TokenVerifier func(idToken, audience string) (*idtoken.Payload, error)
+
+	Config Config
 }
 
-type serverConfig struct {
-	audience           string
-	authorisedSubjects []string
+// Config holds configuration for Server.
+type Config struct {
+	ClientID           string
+	AuthorisedSubjects []string
 }
 
 // new sets up and returns a new server.
-func new() server {
-	s := server{
-		cfg: serverConfig{
-			audience:           viper.GetString("google_client_id"),
-			authorisedSubjects: viper.GetStringSlice("auth_sub"),
+func new() Server {
+	s := Server{
+		Config: Config{
+			AuthorisedSubjects: viper.GetStringSlice("auth_sub"),
+			ClientID:           viper.GetString("google_client_id"),
 		},
-		router: chi.NewRouter(),
+		Router:        chi.NewRouter(),
+		TokenVerifier: verifyIntegrity,
 	}
 
-	s.router.Use(middleware.RequestID)
-	// s.router.Use(middleware.RealIP) // TODO: look into security implications
-	s.router.Use(middleware.Logger) // look at https://github.com/goware/httplog as well
-	s.router.Use(middleware.Recoverer)
-
-	// Set a timeout value on the request context (ctx), that will signal through ctx.Done() that the request has timed
-	// out and further processing should be stopped.
-	s.router.Use(middleware.Timeout(time.Second * 10))
-
-	s.router.Use(middleware.Heartbeat("/ping"))
-	s.router.Use(middleware.Throttle(100))
-
-	s.setupRoutes()
+	s.Initialise()
 
 	return s
 }

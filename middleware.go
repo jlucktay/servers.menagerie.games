@@ -6,10 +6,10 @@ import (
 	"sort"
 )
 
-func (s *server) authorisedOnly(next http.Handler) http.Handler {
+func (s *Server) authorisedOnly(next http.Handler) http.Handler {
 	// Allowlist based on Google account ID
-	if !sort.StringsAreSorted(s.cfg.authorisedSubjects) {
-		sort.Strings(s.cfg.authorisedSubjects)
+	if !sort.StringsAreSorted(s.Config.AuthorisedSubjects) {
+		sort.Strings(s.Config.AuthorisedSubjects)
 	}
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -22,8 +22,8 @@ func (s *server) authorisedOnly(next http.Handler) http.Handler {
 			return
 		}
 
-		// Run it through verifyIntegrity
-		idtp, err := verifyIntegrity(cToken.Value, s.cfg.audience)
+		// Run it through verification
+		idtp, err := s.TokenVerifier(cToken.Value, s.Config.ClientID)
 		if err != nil {
 			http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
 			log.Printf("error verifying token integrity: %v", err)
@@ -31,9 +31,9 @@ func (s *server) authorisedOnly(next http.Handler) http.Handler {
 			return
 		}
 
-		i := sort.SearchStrings(s.cfg.authorisedSubjects, idtp.Subject)
+		i := sort.SearchStrings(s.Config.AuthorisedSubjects, idtp.Subject)
 
-		if i >= len(s.cfg.authorisedSubjects) || s.cfg.authorisedSubjects[i] != idtp.Subject {
+		if i >= len(s.Config.AuthorisedSubjects) || s.Config.AuthorisedSubjects[i] != idtp.Subject {
 			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 			log.Printf("subject is not authorised: %s", idtp.Subject)
 

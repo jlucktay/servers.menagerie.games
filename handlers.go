@@ -12,11 +12,11 @@ import (
 	"github.com/yosssi/gohtml"
 )
 
-func (s *server) faviconHandler(w http.ResponseWriter, r *http.Request) {
+func (s *Server) faviconHandler(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, "favicon.ico")
 }
 
-func (s *server) rootPageHandler(clientID string) http.HandlerFunc {
+func (s *Server) rootPageHandler(clientID string) http.HandlerFunc {
 	var (
 		init      sync.Once
 		pageBytes []byte
@@ -58,7 +58,7 @@ func (s *server) rootPageHandler(clientID string) http.HandlerFunc {
 
 // tokenSignInHandler will handle the parsing and verification of a login with a token from GSIFW.
 // If successful, a cookie will be set containing the verified token.
-func (s *server) tokenSignInHandler(w http.ResponseWriter, r *http.Request) {
+func (s *Server) tokenSignInHandler(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseForm(); err != nil {
 		resp := fmt.Errorf("%s: could not parse request form: %w", http.StatusText(http.StatusBadRequest), err)
 		http.Error(w, resp.Error(), http.StatusBadRequest)
@@ -85,7 +85,7 @@ func (s *server) tokenSignInHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	idtp, err := verifyIntegrity(idToken[0], s.cfg.audience)
+	idtp, err := s.TokenVerifier(idToken[0], s.Config.ClientID)
 	if err != nil {
 		resp := fmt.Errorf("%s: could not verify integrity of the ID token: %w",
 			http.StatusText(http.StatusBadRequest), err)
@@ -140,7 +140,7 @@ func (s *server) tokenSignInHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s *server) manageGetHandler(w http.ResponseWriter, r *http.Request) {
+func (s *Server) manageGetHandler(w http.ResponseWriter, r *http.Request) {
 	if _, err := w.Write([]byte("GET /manage")); err != nil {
 		log.Print(err)
 
@@ -148,7 +148,7 @@ func (s *server) manageGetHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s *server) managePostHandler(w http.ResponseWriter, r *http.Request) {
+func (s *Server) managePostHandler(w http.ResponseWriter, r *http.Request) {
 	if _, err := w.Write([]byte("POST /manage")); err != nil {
 		log.Print(err)
 

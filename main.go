@@ -84,7 +84,7 @@ func main() {
 
 	httpServer := http.Server{
 		Addr:    viper.GetString("address"),
-		Handler: myServer.router,
+		Handler: myServer.Router,
 
 		ReadTimeout:  time.Second * 5,
 		WriteTimeout: time.Second * 10,
