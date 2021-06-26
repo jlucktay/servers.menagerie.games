@@ -102,10 +102,12 @@ func main() {
 	}
 
 	srv := http.Server{
-		Addr:         viper.GetString("address"),
-		Handler:      router,
-		ReadTimeout:  time.Second * 10,
+		Addr:    viper.GetString("address"),
+		Handler: router,
+
+		ReadTimeout:  time.Second * 5,
 		WriteTimeout: time.Second * 10,
+		IdleTimeout:  time.Second * 120,
 	}
 
 	// Set up handling for interrupt signal (CTRL+C)
