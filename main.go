@@ -96,6 +96,7 @@ func main() {
 		audience += audienceSuffix
 	}
 
+	// Config is done, so set up the router next
 	router, err := setupRouter()
 	if err != nil {
 		log.Fatalf("could not set up router: %v", err)
