@@ -31,3 +31,6 @@
 
 # Binaries
 smg
+
+# Secrets
+/.env

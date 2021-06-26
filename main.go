@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"html/template"
 	"log"
@@ -30,6 +31,7 @@ var (
 )
 
 func main() {
+	viper.SetConfigFile(".env")
 	viper.SetEnvPrefix("smg")
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	viper.AutomaticEnv()
@@ -59,22 +61,30 @@ func main() {
 		log.Fatalf("could not bind pflags: %v", err)
 	}
 
+	if err := viper.ReadInConfig(); err != nil {
+		var pathError *os.PathError
+		if errors.Is(err, &viper.ConfigFileNotFoundError{}) || errors.As(err, &pathError) {
+			log.Printf("no config file found (%s)", viper.ConfigFileUsed())
+		} else {
+			// Config file was found but another error was produced
+			log.Fatalf("viper could not read in config: %v", err)
+		}
+	}
+
 	// SMG_AUTH_SUB should be set in the environment like so:
 	// $ export SMG_AUTH_SUB="one two three"
 	// This will authorise three different subjects.
 	authorisedSubjects = viper.GetStringSlice("auth_sub")
 	if len(authorisedSubjects) == 0 {
-		log.Print("no authorised subjects defined; set SMG_AUTH_SUB in env")
-
-		return
+		log.Fatal("no authorised subjects defined; set SMG_AUTH_SUB in environment " +
+			"or AUTH_SUB in the '.env' file")
 	}
 
 	log.Printf("%d authorised subject(s): %+v", len(authorisedSubjects), authorisedSubjects)
 
 	if viper.GetString("google_client_id") == "" {
-		log.Print("missing Google Client ID; set SMG_GOOGLE_CLIENT_ID in env")
-
-		return
+		log.Fatal("missing Google Client ID; set SMG_GOOGLE_CLIENT_ID in environment " +
+			"or GOOGLE_CLIENT_ID in the '.env' file")
 	}
 
 	// Prepare the login page template
