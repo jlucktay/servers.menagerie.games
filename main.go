@@ -24,10 +24,9 @@ import (
 const audienceSuffix = ".apps.googleusercontent.com"
 
 var (
-	audience string
-	tpl      *template.Template
-
-	authorisedSubjects = make([]string, 0)
+	audience           string
+	authorisedSubjects []string
+	rootPageBytes      []byte
 )
 
 func main() {
@@ -79,13 +78,18 @@ func main() {
 	}
 
 	// Prepare the login page template
-	tpl = template.Must(template.New("gsifw.html").ParseFiles("gsifw.html"))
 	audience = viper.GetString("google_client_id")
 
 	if strings.HasSuffix(viper.GetString("google_client_id"), audienceSuffix) {
 		viper.Set("google_client_id", strings.TrimSuffix(viper.GetString("google_client_id"), audienceSuffix))
 	} else {
 		audience += audienceSuffix
+	}
+
+	if err := prepareGSIFWBytes(viper.GetString("google_client_id")); err != nil {
+		log.Printf("could not prepare root page bytes: %v", err)
+
+		return
 	}
 
 	srv := http.Server{
@@ -169,12 +173,7 @@ func faviconHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func rootPageHandler(w http.ResponseWriter, _ *http.Request) {
-	rootPage, err := prepareGSIFWBytes(tpl, viper.GetString("google_client_id"))
-	if err != nil {
-		return
-	}
-
-	if _, err := w.Write(rootPage); err != nil {
+	if _, err := w.Write(rootPageBytes); err != nil {
 		resp := fmt.Errorf("%s: could not write page bytes to ResponseWriter: %w",
 			http.StatusText(http.StatusInternalServerError), err)
 		http.Error(w, resp.Error(), http.StatusInternalServerError)
@@ -184,20 +183,28 @@ func rootPageHandler(w http.ResponseWriter, _ *http.Request) {
 	}
 }
 
-// prepareGSIFWBytes will execute the given template to render the clientID into place, and return a byte-slice
-// representation of the root page.
-func prepareGSIFWBytes(tpl *template.Template, clientID string) ([]byte, error) {
-	data := struct{ ClientID string }{ClientID: clientID}
-
-	b := &bytes.Buffer{}
-	if err := tpl.Execute(b, data); err != nil {
-		log.Printf("could not execute template into buffer: %v", err)
-		return nil, err
+// prepareGSIFWBytes will execute a template to render the clientID into place, and put a byte-slice representation of
+// the root page into a package global slice.
+func prepareGSIFWBytes(clientID string) error {
+	tpl, err := template.New("gsifw.html").ParseFiles("gsifw.html")
+	if err != nil {
+		return fmt.Errorf("could not parse template: %w", err)
 	}
 
-	return gohtml.FormatBytes(b.Bytes()), nil
+	data := struct{ ClientID string }{ClientID: clientID}
+
+	buf := &bytes.Buffer{}
+	if err := tpl.Execute(buf, data); err != nil {
+		return fmt.Errorf("could not execute template into buffer: %w", err)
+	}
+
+	rootPageBytes = gohtml.FormatBytes(buf.Bytes())
+
+	return nil
 }
 
+// tokenSignIn will handle the parsing and verification of a login with a token from GSIFW.
+// If successful, a cookie will be set containing the verified token.
 func tokenSignIn(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseForm(); err != nil {
 		resp := fmt.Errorf("%s: could not parse request form: %w", http.StatusText(http.StatusBadRequest), err)
