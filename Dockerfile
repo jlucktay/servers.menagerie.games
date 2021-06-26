@@ -42,7 +42,7 @@ COPY . .
 
 # Compile! Should only compile our project since everything else has been precompiled by now, and future
 # (re)compilations will leverage the same cached layer(s)
-RUN go build -ldflags="-buildid= -w" -trimpath -v -o /bin/smg
+RUN go build -ldflags="-buildid= -w" -trimpath -o /bin/smg -v go.jlucktay.dev/servers.menagerie.games
 
 FROM scratch AS runner
 
