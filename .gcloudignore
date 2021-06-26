@@ -1,4 +1,6 @@
-/.editorconfig
-/.github/
-/.hadolint.yaml
-/hack
+# Metadata
+#!include:.dockerignore
+#!include:.gitignore
+
+# Need this to build with
+!/Dockerfile

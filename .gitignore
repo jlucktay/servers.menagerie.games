@@ -30,7 +30,7 @@
 /tmp/
 
 # Binaries
-smg
+/smg
 
 # Secrets
 /.env

@@ -1,15 +1,21 @@
 # Metadata
-.dockerignore
-.gcloudignore
-.git/
-.github/
-.gitignore
+/.git/
+/.github/
+/.dockerignore
+/.gcloudignore
+/.gitignore
 
 # Build and binary files
-Dockerfile
-smg
+/Dockerfile
+/Makefile
+/smg
 
 # Makefile things
-/hack/bin/
+/hack/
 /out/
 /tmp/
+
+# Config
+/.editorconfig
+/.golangci.yaml
+/.hadolint.yaml
