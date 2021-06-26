@@ -96,15 +96,14 @@ func main() {
 		audience += audienceSuffix
 	}
 
-	if err := prepareGSIFWBytes(viper.GetString("google_client_id")); err != nil {
-		log.Printf("could not prepare root page bytes: %v", err)
-
-		return
+	router, err := setupRouter()
+	if err != nil {
+		log.Fatalf("could not set up router: %v", err)
 	}
 
 	srv := http.Server{
 		Addr:         viper.GetString("address"),
-		Handler:      setupRouter(),
+		Handler:      router,
 		ReadTimeout:  time.Second * 10,
 		WriteTimeout: time.Second * 10,
 	}
@@ -116,7 +115,7 @@ func main() {
 		signal.Notify(sigint, os.Interrupt)
 		<-sigint
 
-		log.Print("interrupt signal received; server beginning shutdown")
+		log.Print("interrupt signal received; server beginning graceful shutdown")
 
 		if err := srv.Shutdown(context.Background()); err != nil {
 			log.Printf("error during shutdown: %v", err)
@@ -128,8 +127,9 @@ func main() {
 	// Start server listening
 	log.Printf("server listening on '%s'...", srv.Addr)
 
-	if err := srv.ListenAndServe(); err != http.ErrServerClosed {
+	if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		log.Printf("error starting or closing listener: %v", err)
+
 		return
 	}
 
@@ -139,7 +139,7 @@ func main() {
 	log.Print("server has been shutdown, and all (idle) connections closed")
 }
 
-func setupRouter() *chi.Mux {
+func setupRouter() (*chi.Mux, error) {
 	r := chi.NewRouter()
 	r.Use(middleware.RequestID)
 	// r.Use(middleware.RealIP) // TODO: look into security implications
@@ -152,6 +152,10 @@ func setupRouter() *chi.Mux {
 
 	r.Use(middleware.Heartbeat("/ping"))
 	r.Use(middleware.Throttle(100))
+
+	if err := prepareGSIFWBytes(viper.GetString("google_client_id")); err != nil {
+		return nil, fmt.Errorf("could not prepare root page bytes: %w", err)
+	}
 
 	r.Get("/favicon.ico", faviconHandler) // GET /favicon.ico
 	r.Get("/", rootPageHandler)           // GET /
@@ -175,7 +179,7 @@ func setupRouter() *chi.Mux {
 		})
 	})
 
-	return r
+	return r, nil
 }
 
 func faviconHandler(w http.ResponseWriter, r *http.Request) {
