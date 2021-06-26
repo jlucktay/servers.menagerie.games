@@ -1,6 +1,8 @@
-# Google Sign-In for Websites
+# servers.menagerie.games
 
-[![godoc](https://img.shields.io/badge/pkg.go.dev-godoc-00ADD8?logo=go)](https://pkg.go.dev/go.jlucktay.dev/gsifw)
+> Powered by Google Sign-In for Websites (GSIFW)
+
+[![godoc](https://img.shields.io/badge/pkg.go.dev-godoc-00ADD8?logo=go)](https://pkg.go.dev/go.jlucktay.dev/servers.menagerie.games)
 
 ## Google Cloud - Cloud Functions
 
@@ -53,5 +55,5 @@
 ## Security considerations
 
 - <https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html>
-- cookies **must** be HTTPS only (`Secure` flag) with `SameSite` set to strict
+- ~~cookies **must** be HTTPS only (`Secure` flag) with `SameSite` set to strict~~
 - <https://www.packetlabs.net/session-management/>
