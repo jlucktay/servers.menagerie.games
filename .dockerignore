@@ -16,6 +16,7 @@
 /tmp/
 
 # Config
+/.vscode/
 /.editorconfig
 /.golangci.yaml
 /.hadolint.yaml
