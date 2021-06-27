@@ -117,12 +117,17 @@ tmp/.cloud-built.sentinel: Dockerfile tmp/.linted.sentinel .gcloudignore
 >   --tag="$(image_repository)"
 > touch $@
 
-tmp/.cloud-deployed.sentinel: tmp/.cloud-built.sentinel .gcloudignore
+tmp/.cloud-deployed.sentinel: tmp/.cloud-built.sentinel .gcloudignore tmp/flags.yaml
 > mkdir -p $(@D)
 > gcloud run deploy $(binary_name) \
 >   --allow-unauthenticated \
+>   --flags-file=tmp/flags.yaml \
 >   --image="$(image_repository)" \
 >   --project="$(gcp_project)" \
 >   --region="$(gcp_region)" \
->   --set-env-vars=SMG_AUTH_SUB="$(AUTH_SUB)",SMG_GOOGLE_CLIENT_ID="$(GOOGLE_CLIENT_ID)"
+>   --service-account="$(CLOUD_RUN_SERVICE_ACCOUNT)"
 > touch $@
+
+tmp/flags.yaml: hack/flags-file.sh .env
+> mkdir -p $(@D)
+> hack/flags-file.sh
