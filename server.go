@@ -19,8 +19,8 @@ type Server struct {
 
 // Config holds configuration for Server.
 type Config struct {
-	ClientID           string
 	Manage             ManageConfig
+	Audience           string
 	AuthorisedSubjects []string
 }
 
@@ -33,8 +33,8 @@ type ManageConfig struct {
 func new() Server {
 	s := Server{
 		Config: Config{
+			Audience:           viper.GetString("google_client_id") + ".apps.googleusercontent.com",
 			AuthorisedSubjects: viper.GetStringSlice("auth_sub"),
-			ClientID:           viper.GetString("google_client_id"),
 			Manage: ManageConfig{
 				Bucket: viper.GetString("manage_bucket"),
 				Object: viper.GetString("manage_object"),

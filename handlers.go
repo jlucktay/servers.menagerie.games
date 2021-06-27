@@ -16,7 +16,7 @@ func (s *Server) faviconHandler(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, "favicon.ico")
 }
 
-func (s *Server) rootPageHandler(clientID string) http.HandlerFunc {
+func (s *Server) rootPageHandler(audience string) http.HandlerFunc {
 	var (
 		init      sync.Once
 		pageBytes []byte
@@ -32,7 +32,7 @@ func (s *Server) rootPageHandler(clientID string) http.HandlerFunc {
 				return
 			}
 
-			data := struct{ ClientID string }{ClientID: clientID}
+			data := struct{ Audience string }{Audience: audience}
 
 			buf := &bytes.Buffer{}
 			if err := tpl.Execute(buf, data); err != nil {
@@ -85,7 +85,7 @@ func (s *Server) tokenSignInHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	idtp, err := s.TokenVerifier(idToken[0], s.Config.ClientID)
+	idtp, err := s.TokenVerifier(idToken[0], s.Config.Audience)
 	if err != nil {
 		resp := fmt.Errorf("%s: could not verify integrity of the ID token: %w",
 			http.StatusText(http.StatusBadRequest), err)

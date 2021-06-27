@@ -23,7 +23,7 @@ func (s *Server) authorisedOnly(next http.Handler) http.Handler {
 		}
 
 		// Run it through verification
-		idtp, err := s.TokenVerifier(cToken.Value, s.Config.ClientID)
+		idtp, err := s.TokenVerifier(cToken.Value, s.Config.Audience)
 		if err != nil {
 			http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
 			log.Printf("error verifying token integrity: %v", err)

@@ -21,7 +21,7 @@ func TestBodyContains(t *testing.T) {
 	s := main.Server{
 		Config: main.Config{
 			AuthorisedSubjects: []string{"one", "two", "three"},
-			ClientID:           "client_id",
+			Audience:           "client_id.apps.googleusercontent.com",
 		},
 		Router: chi.NewRouter(),
 		TokenVerifier: func(idToken, audience string) (*idtoken.Payload, error) {
@@ -58,7 +58,7 @@ func TestBodyContains(t *testing.T) {
 		"Look for the client ID in the root page": {
 			method:            http.MethodGet,
 			path:              "/",
-			bodyShouldContain: `<meta name="google-signin-client_id" content="client_id.apps.googleusercontent.com" />`,
+			bodyShouldContain: `<meta name="google-signin-client_id" content="` + s.Config.Audience + `" />`,
 		},
 	}
 	for name, tC := range testCases {

@@ -21,7 +21,7 @@ func (s *Server) Initialise() {
 	s.Router.Use(middleware.Heartbeat("/ping"))
 	s.Router.Use(middleware.Throttle(100))
 
-	s.Router.Get("/", s.rootPageHandler(s.Config.ClientID)) // GET /
+	s.Router.Get("/", s.rootPageHandler(s.Config.Audience)) // GET /
 	s.Router.Get("/favicon.ico", s.faviconHandler)          // GET /favicon.ico
 	s.Router.Post("/tokensignin", s.tokenSignInHandler)     // POST /tokensignin
 
