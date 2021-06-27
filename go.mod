@@ -3,6 +3,7 @@ module go.jlucktay.dev/servers.menagerie.games
 go 1.15
 
 require (
+	cloud.google.com/go/storage v1.15.0
 	github.com/go-chi/chi/v5 v5.0.3
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/matryer/is v1.4.0

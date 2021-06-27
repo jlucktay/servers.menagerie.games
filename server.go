@@ -20,7 +20,13 @@ type Server struct {
 // Config holds configuration for Server.
 type Config struct {
 	ClientID           string
+	Manage             ManageConfig
 	AuthorisedSubjects []string
+}
+
+// ManageConfig is scoped to the /manage sub-router.
+type ManageConfig struct {
+	Bucket, Object string
 }
 
 // new sets up and returns a new server.
@@ -29,6 +35,10 @@ func new() Server {
 		Config: Config{
 			AuthorisedSubjects: viper.GetStringSlice("auth_sub"),
 			ClientID:           viper.GetString("google_client_id"),
+			Manage: ManageConfig{
+				Bucket: viper.GetString("manage_bucket"),
+				Object: viper.GetString("manage_object"),
+			},
 		},
 		Router:        chi.NewRouter(),
 		TokenVerifier: verifyIntegrity,

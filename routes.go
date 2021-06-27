@@ -30,7 +30,7 @@ func (s *Server) Initialise() {
 	s.Router.Route("/manage", func(r chi.Router) {
 		r.Use(s.authorisedOnly)
 
-		r.Get("/", s.manageGetHandler)   // GET /manage
+		r.Get("/", s.manageGetHandler()) // GET /manage
 		r.Post("/", s.managePostHandler) // POST /manage
 	})
 }

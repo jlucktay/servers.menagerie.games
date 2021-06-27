@@ -139,19 +139,3 @@ func (s *Server) tokenSignInHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 }
-
-func (s *Server) manageGetHandler(w http.ResponseWriter, r *http.Request) {
-	if _, err := w.Write([]byte("GET /manage")); err != nil {
-		log.Print(err)
-
-		return
-	}
-}
-
-func (s *Server) managePostHandler(w http.ResponseWriter, r *http.Request) {
-	if _, err := w.Write([]byte("POST /manage")); err != nil {
-		log.Print(err)
-
-		return
-	}
-}
