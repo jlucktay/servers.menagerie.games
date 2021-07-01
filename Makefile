@@ -97,8 +97,10 @@ lint-simplify: ## Runs 'gofmt -s' to format and simplify all Go code.
 .PHONY: lint-simplify
 
 hack/bin/golangci-lint:
-> curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh \
-> | sh -s -- -b $(shell pwd)/hack/bin
+> mkdir -p $(@D)
+> curl --fail --location --show-error --silent \
+  https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh \
+  | sh -s -- -b $(shell pwd)/hack/bin
 
 # Docker image - re-build if the lint output is re-run.
 out/image-id: Dockerfile tmp/.linted.sentinel
