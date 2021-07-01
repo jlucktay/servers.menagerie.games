@@ -20,8 +20,8 @@ ifeq ($(origin .RECIPEPREFIX), undefined)
 endif
 .RECIPEPREFIX = >
 
-# Bring in variables from .env file
-include .env
+# Bring in variables from .env file, ignoring errors if it does not exist
+-include .env
 
 binary_name ?= smg
 gcp_project ?= $(CLOUDSDK_CORE_PROJECT)
