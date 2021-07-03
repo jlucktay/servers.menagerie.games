@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -29,24 +28,15 @@ func (s *Server) manageGetHandler() http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		init.Do(func() {
-			locationBytes := make([]byte, 0)
-
-			if err := getBlob(s.Config.Manage.Bucket, s.Config.Manage.Object, &locationBytes); err != nil {
+			locations, err := getLocationsFromStorage(s.Config.Manage.Bucket, s.Config.Manage.Object)
+			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				log.Print(err)
 
 				return
 			}
 
-			locs := make([]location, 0)
-			if err := json.Unmarshal(locationBytes, &locs); err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				log.Print(err)
-
-				return
-			}
-
-			data := struct{ Locations []location }{Locations: locs}
+			data := struct{ Locations []location }{Locations: locations}
 			if err := formatTemplate("manage.gohtml", data, &pageBytes); err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				log.Print(err)

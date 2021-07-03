@@ -25,8 +25,6 @@ func (s *Server) Initialise() {
 	s.Router.Get("/favicon.ico", s.faviconHandler)          // GET /favicon.ico
 	s.Router.Post("/tokensignin", s.tokenSignInHandler)     // POST /tokensignin
 
-	// s.router.Mount(pattern string, handler http.Handler)
-
 	s.Router.Route("/manage", func(r chi.Router) {
 		r.Use(s.authorisedOnly)
 
