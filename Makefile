@@ -117,11 +117,12 @@ out/image-id: Dockerfile tmp/.linted.sentinel
 $(binary_name): tmp/.linted.sentinel
 > go build -ldflags="-buildid= -w" -trimpath -v -o $(binary_name)
 
-tmp/.cloud-built.sentinel: Dockerfile tmp/.linted.sentinel .gcloudignore
+tmp/.cloud-built.sentinel: Dockerfile tmp/.linted.sentinel .gcloudignore cloudbuild.yaml
 > mkdir -p $(@D)
 > gcloud builds submit \
->   --project="$(gcp_project)" \
->   --tag="$(image_repository)"
+  --config cloudbuild.yaml \
+  --project="$(gcp_project)" \
+  --substitutions "_DESTINATION=$(image_repository)"
 > touch $@
 
 tmp/.cloud-deployed.sentinel: tmp/.cloud-built.sentinel .gcloudignore tmp/flags.yaml
