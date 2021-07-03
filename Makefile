@@ -59,7 +59,8 @@ clean-docker: ## Clean up any locally built images.
 
 clean-gcr: ## Clean up any remotely built images.
 > gcloud container images list-tags $(image_repository) --filter "NOT tags:*" --format="get(digest)" \
-  | xargs -I % -n 1 gcloud container images delete $(image_repository)@% --quiet
+  | awk '{ print "$(image_repository)@"$$1 }' \
+  | xargs -n 100 gcloud container images delete --quiet
 .PHONY: clean-gcr
 
 clean-hack: ## Clean up binaries under 'hack'.
