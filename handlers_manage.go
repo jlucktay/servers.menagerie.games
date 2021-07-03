@@ -1,11 +1,25 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"sync"
 )
+
+// location describes the structure of a JSON file that we use to denote which GCP regions and zones are in use by this
+// project.
+type location struct {
+	// Location is a human friendly name for a location.
+	Location string `json:"location"`
+
+	// Zone is the Google Cloud name that aligns with Location.
+	Zone string `json:"zone"`
+
+	// Default will be true for only one location in the whole file.
+	Default bool `json:"default"`
+}
 
 func (s *Server) manageGetHandler() http.HandlerFunc {
 	var (
@@ -15,7 +29,25 @@ func (s *Server) manageGetHandler() http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		init.Do(func() {
-			if err := getBlob(s.Config.Manage.Bucket, s.Config.Manage.Object, &pageBytes); err != nil {
+			locationBytes := make([]byte, 0)
+
+			if err := getBlob(s.Config.Manage.Bucket, s.Config.Manage.Object, &locationBytes); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				log.Print(err)
+
+				return
+			}
+
+			locs := make([]location, 0)
+			if err := json.Unmarshal(locationBytes, &locs); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				log.Print(err)
+
+				return
+			}
+
+			data := struct{ Locations []location }{Locations: locs}
+			if err := formatTemplate("manage.gohtml", data, &pageBytes); err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				log.Print(err)
 
