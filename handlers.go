@@ -20,7 +20,11 @@ func (s *Server) rootPageHandler(audience string) http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		init.Do(func() {
-			data := struct{ Audience string }{Audience: audience}
+			data := struct {
+				Audience string
+			}{
+				Audience: audience,
+			}
 			if err := formatTemplate("root.gohtml", data, &pageBytes); err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				log.Println(err)

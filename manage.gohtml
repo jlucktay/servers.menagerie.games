@@ -6,11 +6,11 @@
   <body>
     <h1>Locations</h1>
       <ul>
-{{ range .Locations }}
-<li>{{ .Location }} = {{ .Zone }}</li>
-{{ else }}
-<li>no data</li>
-{{ end }}
+        {{ range .Locations }}
+        <li>{{ .Location }} = {{ .Zone }}{{ if .Default }} (default){{ end }}</li>
+        {{ else }}
+        <li>no data</li>
+        {{ end }}
       </ul>
   </body>
 </html>

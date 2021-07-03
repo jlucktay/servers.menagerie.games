@@ -36,7 +36,11 @@ func (s *Server) manageGetHandler() http.HandlerFunc {
 				return
 			}
 
-			data := struct{ Locations []location }{Locations: locations}
+			data := struct {
+				Locations []location
+			}{
+				Locations: locations,
+			}
 			if err := formatTemplate("manage.gohtml", data, &pageBytes); err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				log.Print(err)

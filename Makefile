@@ -122,7 +122,7 @@ run-local: out/image-id .env ## Run up the local image.
 > docker run --interactive --tty --publish 8080:8080 --rm --volume "$(shell pwd)/.env:/.env:ro" $$(< out/image-id)
 .PHONY: run-local
 
-tmp/.cloud-built.sentinel: Dockerfile tmp/.linted.sentinel .gcloudignore cloudbuild.yaml
+tmp/.cloud-built.sentinel: Dockerfile tmp/.linted.sentinel .gcloudignore cloudbuild.yaml *.gohtml
 > mkdir -p $(@D)
 > gcloud builds submit \
   --config cloudbuild.yaml \
