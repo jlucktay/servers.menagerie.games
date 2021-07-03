@@ -1,15 +1,11 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
-	"html/template"
 	"log"
 	"net/http"
 	"sync"
 	"time"
-
-	"github.com/yosssi/gohtml"
 )
 
 func (s *Server) faviconHandler(w http.ResponseWriter, r *http.Request) {
@@ -24,25 +20,13 @@ func (s *Server) rootPageHandler(audience string) http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		init.Do(func() {
-			tpl, errTpl := template.ParseFiles("gsifw.html")
-			if errTpl != nil {
-				http.Error(w, errTpl.Error(), http.StatusInternalServerError)
-				log.Print(errTpl)
-
-				return
-			}
-
 			data := struct{ Audience string }{Audience: audience}
-
-			buf := &bytes.Buffer{}
-			if err := tpl.Execute(buf, data); err != nil {
-				http.Error(w, fmt.Sprintf("could not execute template into buffer: %v", err), http.StatusInternalServerError)
-				log.Print(err)
+			if err := formatTemplate("root.gohtml", data, &pageBytes); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				log.Println(err)
 
 				return
 			}
-
-			pageBytes = gohtml.FormatBytes(buf.Bytes())
 		})
 
 		if _, err := w.Write(pageBytes); err != nil {

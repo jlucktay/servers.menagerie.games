@@ -53,7 +53,7 @@ USER scratchuser
 
 # Bring in web things
 WORKDIR /
-COPY gsifw.html favicon.ico ./
+COPY *.gohtml favicon.ico ./
 
 # Bring common CA certificates and binary over
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
