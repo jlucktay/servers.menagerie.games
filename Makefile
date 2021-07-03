@@ -31,7 +31,7 @@ image_repository ?= gcr.io/$(gcp_project)/$(shell basename $(CURDIR))
 # Adjust the width of the first column by changing the '-20s' value in the printf pattern.
 help:
 > @grep -E '^[a-zA-Z0-9_-]+:.*? ## .*$$' $(filter-out .env, $(MAKEFILE_LIST)) | sort \
-> | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
+  | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
 .PHONY: help
 
 all: test lint build ## Test and lint and build.
@@ -50,18 +50,23 @@ clean: ## Clean up the built binary, test coverage, and the temp and output sub-
 > rm -rf cover.out tmp out
 .PHONY: clean
 
-clean-docker: ## Clean up any built Docker images.
+clean-docker: ## Clean up any locally built images.
 > docker images \
   --filter=reference=$(image_repository) \
-  --no-trunc --quiet | sort -f | uniq | xargs -n 1 docker rmi --force
+  --no-trunc --quiet | sort --ignore-case --unique | xargs -n 1 docker rmi --force
 > rm -f out/image-id
 .PHONY: clean-docker
+
+clean-gcr: ## Clean up any remotely built images.
+> gcloud container images list-tags $(image_repository) --filter "NOT tags:*" --format="get(digest)" \
+  | xargs -I % -n 1 gcloud container images delete $(image_repository)@% --quiet
+.PHONY: clean-gcr
 
 clean-hack: ## Clean up binaries under 'hack'.
 > rm -rf hack/bin
 .PHONY: clean-hack
 
-clean-all: clean clean-docker clean-hack ## Clean all of the things.
+clean-all: clean clean-docker clean-gcr clean-hack ## Clean all of the things.
 .PHONY: clean-all
 
 # Tests - re-run if any Go files have changes since tmp/.tests-passed.sentinel was last touched.
@@ -84,9 +89,9 @@ tmp/.benchmarks-ran.sentinel: $(shell find . -type f -iname "*.go") go.mod go.su
 tmp/.linted.sentinel: Dockerfile .golangci.yaml .hadolint.yaml hack/bin/golangci-lint tmp/.tests-passed.sentinel
 > mkdir -p $(@D)
 > docker run --env XDG_CONFIG_HOME=/etc --interactive --rm \
-> --volume "$(shell pwd)/.hadolint.yaml:/etc/hadolint.yaml:ro" hadolint/hadolint < Dockerfile
+  --volume "$(shell pwd)/.hadolint.yaml:/etc/hadolint.yaml:ro" hadolint/hadolint < Dockerfile
 > find . -type f -iname "*.go" -exec gofmt -e -l -s "{}" + \
-> | awk '{ print } END { if (NR != 0) { print "gofmt found issues in the above file(s); \
+  | awk '{ print } END { if (NR != 0) { print "gofmt found issues in the above file(s); \
 please run \"make lint-simplify\" to remedy"; exit 1 } }'
 > go vet ./...
 > hack/bin/golangci-lint run
@@ -122,12 +127,12 @@ tmp/.cloud-built.sentinel: Dockerfile tmp/.linted.sentinel .gcloudignore
 tmp/.cloud-deployed.sentinel: tmp/.cloud-built.sentinel .gcloudignore tmp/flags.yaml
 > mkdir -p $(@D)
 > gcloud run deploy $(binary_name) \
->   --allow-unauthenticated \
->   --flags-file=tmp/flags.yaml \
->   --image="$(image_repository)" \
->   --project="$(gcp_project)" \
->   --region="$(gcp_region)" \
->   --service-account="$(CLOUD_RUN_SERVICE_ACCOUNT)"
+  --allow-unauthenticated \
+  --flags-file=tmp/flags.yaml \
+  --image="$(image_repository)" \
+  --project="$(gcp_project)" \
+  --region="$(gcp_region)" \
+  --service-account="$(CLOUD_RUN_SERVICE_ACCOUNT)"
 > touch $@
 
 tmp/flags.yaml: hack/flags-file.sh .env
