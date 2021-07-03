@@ -31,6 +31,7 @@ func (s *Server) authorisedOnly(next http.Handler) http.Handler {
 			return
 		}
 
+		// Search through authorised subjects
 		i := sort.SearchStrings(s.Config.AuthorisedSubjects, idtp.Subject)
 
 		if i >= len(s.Config.AuthorisedSubjects) || s.Config.AuthorisedSubjects[i] != idtp.Subject {
