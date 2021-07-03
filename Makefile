@@ -109,7 +109,7 @@ hack/bin/golangci-lint:
   | sh -s -- -b $(shell pwd)/hack/bin
 
 # Docker image - re-build if the lint output is re-run.
-out/image-id: Dockerfile tmp/.linted.sentinel
+out/image-id: tmp/.linted.sentinel
 > mkdir -p $(@D)
 > image_id="$(image_repository):$(shell uuidgen)"
 > DOCKER_BUILDKIT=1 docker build --tag="$${image_id}" .
@@ -117,6 +117,10 @@ out/image-id: Dockerfile tmp/.linted.sentinel
 
 $(binary_name): tmp/.linted.sentinel
 > go build -ldflags="-buildid= -w" -trimpath -v -o $(binary_name)
+
+run-local: out/image-id .env ## Run up the local image.
+> docker run --interactive --tty --publish 8080:8080 --rm --volume "$(shell pwd)/.env:/.env:ro" $$(< out/image-id)
+.PHONY: run-local
 
 tmp/.cloud-built.sentinel: Dockerfile tmp/.linted.sentinel .gcloudignore cloudbuild.yaml
 > mkdir -p $(@D)
