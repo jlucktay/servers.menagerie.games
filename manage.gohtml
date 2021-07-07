@@ -5,12 +5,18 @@
   </head>
   <body>
     <h1>Locations</h1>
-      <ul>
-        {{ range .Locations }}
-        <li>{{ .Location }} = {{ .Zone }}{{ if .Default }} (default){{ end }}</li>
-        {{ else }}
-        <li>no data</li>
-        {{ end }}
-      </ul>
+    <ul>
+      {{ range .Locations }}
+      <li>{{ .Location }} = {{ .Zone }}{{ if .Default }} (default){{ end }}</li>
+      {{ else }}
+      <li>no data</li>
+      {{ end }}
+    </ul>
+    <hr />
+    <form action="/manage" method="post">
+      <li class="button">
+        <button type="submit">Launch the server</button>
+      </li>
+    </form>
   </body>
 </html>

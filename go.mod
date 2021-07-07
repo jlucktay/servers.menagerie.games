@@ -11,6 +11,5 @@ require (
 	github.com/spf13/viper v1.8.0
 	github.com/yosssi/gohtml v0.0.0-20201013000340-ee4748c638f4
 	golang.org/x/net v0.0.0-20210614182718-04defd469f4e // indirect
-	golang.org/x/oauth2 v0.0.0-20210622215436-a8dc77f794b6 // indirect
-	google.golang.org/api v0.49.0
+	google.golang.org/api v0.50.0
 )

@@ -29,6 +29,10 @@ func (s *Server) Initialise() {
 		r.Use(s.authorisedOnly)
 
 		r.Get("/", s.manageGetHandler()) // GET /manage
+
+		// Only one request will be processed at a time.
+		r.Use(middleware.Throttle(1))
+
 		r.Post("/", s.managePostHandler) // POST /manage
 	})
 }

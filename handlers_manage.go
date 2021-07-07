@@ -1,10 +1,14 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/http"
 	"sync"
+
+	"github.com/spf13/viper"
+	"google.golang.org/api/compute/v1"
 )
 
 // location describes the structure of a JSON file that we use to denote which GCP regions and zones are in use by this
@@ -61,8 +65,26 @@ func (s *Server) manageGetHandler() http.HandlerFunc {
 }
 
 func (s *Server) managePostHandler(w http.ResponseWriter, r *http.Request) {
-	if _, err := w.Write([]byte("POST /manage")); err != nil {
-		log.Print(err)
+	ctx := context.TODO()
+
+	svc, err := compute.NewService(ctx)
+	if err != nil {
+		log.Printf("could not create new Compute service: %v", err)
+
+		return
+	}
+
+	tmplListCall := svc.InstanceTemplates.List(viper.GetString("CLOUDSDK_CORE_PROJECT"))
+
+	list, err := tmplListCall.Do()
+	if err != nil {
+		log.Printf("could not list instance templates from Compute service: %v", err)
+
+		return
+	}
+
+	if _, err := w.Write([]byte(fmt.Sprintf("POST /manage\n%#v", list.Items))); err != nil {
+		log.Printf("could not write bytes to response: %v", err)
 
 		return
 	}
