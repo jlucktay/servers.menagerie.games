@@ -73,7 +73,7 @@ clean-all: clean clean-docker clean-gcr clean-hack ## Clean all of the things.
 # Tests - re-run if any Go files have changes since tmp/.tests-passed.sentinel was last touched.
 tmp/.tests-passed.sentinel: $(shell find . -type f -iname "*.go") go.mod go.sum
 > mkdir -p $(@D)
-> go test ./...
+> go test -v ./...
 > touch $@
 
 tmp/.cover-tests-passed.sentinel: $(shell find . -type f -iname "*.go") go.mod go.sum
@@ -83,7 +83,7 @@ tmp/.cover-tests-passed.sentinel: $(shell find . -type f -iname "*.go") go.mod g
 
 tmp/.benchmarks-ran.sentinel: $(shell find . -type f -iname "*.go") go.mod go.sum
 > mkdir -p $(@D)
-> go test ./... -bench=. -benchmem -benchtime=10s -run=DoNotRunTests
+> go test -bench=. -benchmem -benchtime=10s -run=DoNotRunTests ./...
 > touch $@
 
 # Lint - re-run if the tests have been re-run (and so, by proxy, whenever the source files have changed).

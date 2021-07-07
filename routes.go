@@ -30,9 +30,11 @@ func (s *Server) Initialise() {
 
 		r.Get("/", s.manageGetHandler()) // GET /manage
 
-		// Only one request will be processed at a time.
-		r.Use(middleware.Throttle(1))
+		r.Route("/", func(r chi.Router) {
+			// Only one request will be processed at a time.
+			r.Use(middleware.Throttle(1))
 
-		r.Post("/", s.managePostHandler) // POST /manage
+			r.Post("/", s.managePostHandler) // POST /manage
+		})
 	})
 }

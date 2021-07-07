@@ -5,6 +5,8 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
+	"path"
 	"strings"
 	"testing"
 
@@ -54,20 +56,34 @@ func TestBodyContains(t *testing.T) {
 		method            string
 		path              string
 		bodyShouldContain string
+		expectedStatus    int
 	}{
 		"Look for the client ID in the root page": {
 			method:            http.MethodGet,
 			path:              "/",
 			bodyShouldContain: `<meta name="google-signin-client_id" content="` + s.Config.Audience + `" />`,
+			expectedStatus:    200,
+		},
+		"Make sure managing servers requires auth": {
+			method:            http.MethodPost,
+			path:              "/manage",
+			bodyShouldContain: "",
+			expectedStatus:    400,
 		},
 	}
 	for name, tC := range testCases {
 		t.Run(name, func(t *testing.T) {
-			req, err := http.NewRequestWithContext(context.Background(), tC.method, ts.URL+"/", nil)
+			u, err := url.Parse(ts.URL)
+			is.NoErr(err)
+
+			u.Path = path.Join(u.Path, tC.path)
+
+			req, err := http.NewRequestWithContext(context.Background(), tC.method, u.String(), nil)
 			is.NoErr(err)
 
 			resp, err := http.DefaultClient.Do(req)
 			is.NoErr(err)
+			is.Equal(tC.expectedStatus, resp.StatusCode)
 
 			respBody, err := ioutil.ReadAll(resp.Body)
 			is.NoErr(err)

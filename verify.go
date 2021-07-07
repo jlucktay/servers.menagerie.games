@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"strings"
@@ -9,6 +10,8 @@ import (
 
 	"google.golang.org/api/idtoken"
 )
+
+var ErrTokenInvalid = errors.New("could not validate ID token")
 
 // verifyIntegrity checks that the criteria specified at the following link are satisfied:
 // https://developers.google.com/identity/sign-in/web/backend-auth#verify-the-integrity-of-the-id-token
@@ -21,7 +24,7 @@ func verifyIntegrity(ctx context.Context, idToken, audience string) (*idtoken.Pa
 	*/
 	idtPayload, err := idtoken.Validate(ctx, idToken, audience)
 	if err != nil {
-		return nil, fmt.Errorf("could not validate ID token: %w", err)
+		return nil, fmt.Errorf("%v: %w", ErrTokenInvalid, err)
 	}
 
 	/*
