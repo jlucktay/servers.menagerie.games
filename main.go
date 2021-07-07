@@ -46,9 +46,13 @@ func main() {
 	}
 
 	if err := viper.ReadInConfig(); err != nil {
-		var pathError *os.PathError
-		if errors.Is(err, &viper.ConfigFileNotFoundError{}) || errors.As(err, &pathError) {
-			log.Printf("no config file found (%s)", viper.ConfigFileUsed())
+		var (
+			pathError  *os.PathError
+			viperCFNFE viper.ConfigFileNotFoundError
+		)
+
+		if errors.As(err, &viperCFNFE) || errors.As(err, &pathError) {
+			log.Printf("no config file found")
 		} else {
 			// Config file was found but another error was produced
 			log.Fatalf("viper could not read in config: %v", err)
