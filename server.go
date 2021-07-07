@@ -1,6 +1,8 @@
 package main
 
 import (
+	"context"
+
 	"github.com/go-chi/chi/v5"
 	"github.com/spf13/viper"
 	"google.golang.org/api/idtoken"
@@ -12,7 +14,7 @@ type Server struct {
 
 	// TokenVerifier describes a func signature that will verify tokens (for specified audiences) passed in, and return
 	// an initialised/parsed ID token.
-	TokenVerifier func(idToken, audience string) (*idtoken.Payload, error)
+	TokenVerifier func(ctx context.Context, idToken, audience string) (*idtoken.Payload, error)
 
 	Config Config
 }

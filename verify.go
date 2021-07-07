@@ -12,14 +12,14 @@ import (
 
 // verifyIntegrity checks that the criteria specified at the following link are satisfied:
 // https://developers.google.com/identity/sign-in/web/backend-auth#verify-the-integrity-of-the-id-token
-func verifyIntegrity(idToken, audience string) (*idtoken.Payload, error) {
+func verifyIntegrity(ctx context.Context, idToken, audience string) (*idtoken.Payload, error) {
 	/*
 		The ID token is properly signed by Google.
 		Use Google's public keys (available in JWK or PEM format) to verify the token's signature.
 		These keys are regularly rotated; examine the `Cache-Control` header in the response to determine when you should
 		retrieve them again.
 	*/
-	idtPayload, err := idtoken.Validate(context.Background(), idToken, audience)
+	idtPayload, err := idtoken.Validate(ctx, idToken, audience)
 	if err != nil {
 		return nil, fmt.Errorf("could not validate ID token: %w", err)
 	}

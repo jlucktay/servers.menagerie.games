@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"log"
 	"net/http"
@@ -32,7 +31,7 @@ func (s *Server) manageGetHandler() http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		init.Do(func() {
-			locations, err := getLocationsFromStorage(s.Config.Manage.Bucket, s.Config.Manage.Object)
+			locations, err := getLocationsFromStorage(r.Context(), s.Config.Manage.Bucket, s.Config.Manage.Object)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				log.Print(err)
@@ -65,9 +64,7 @@ func (s *Server) manageGetHandler() http.HandlerFunc {
 }
 
 func (s *Server) managePostHandler(w http.ResponseWriter, r *http.Request) {
-	ctx := context.TODO()
-
-	svc, err := compute.NewService(ctx)
+	svc, err := compute.NewService(r.Context())
 	if err != nil {
 		log.Printf("could not create new Compute service: %v", err)
 

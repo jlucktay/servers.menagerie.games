@@ -24,7 +24,7 @@ func TestBodyContains(t *testing.T) {
 			Audience:           "client_id.apps.googleusercontent.com",
 		},
 		Router: chi.NewRouter(),
-		TokenVerifier: func(idToken, audience string) (*idtoken.Payload, error) {
+		TokenVerifier: func(ctx context.Context, idToken, audience string) (*idtoken.Payload, error) {
 			return &idtoken.Payload{
 				Claims: map[string]interface{}{
 					"foo":   "bar",

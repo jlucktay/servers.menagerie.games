@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/signal"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/spf13/pflag"
@@ -95,21 +96,35 @@ func main() {
 		IdleTimeout:  time.Second * 120,
 	}
 
-	// Set up handling for interrupt signal (CTRL+C)
-	idleConnsClosed := make(chan struct{})
+	// Server run context
+	serverCtx, serverStopCtx := context.WithCancel(context.Background())
+
+	// Listen for signals to interrupt/quit
+	sig := make(chan os.Signal, 1)
+	signal.Notify(sig, syscall.SIGHUP, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGTERM)
+
 	go func() {
-		sigint := make(chan os.Signal, 1)
-		signal.Notify(sigint, os.Interrupt)
-		<-sigint
+		<-sig
 
 		log.Print("interrupt signal received; server beginning graceful shutdown")
 
-		// Start http shutdown
-		if err := httpServer.Shutdown(context.Background()); err != nil {
+		shutdownCtx, shutdownCancel := context.WithTimeout(serverCtx, 30*time.Second)
+		defer shutdownCancel()
+
+		go func() {
+			<-shutdownCtx.Done()
+
+			if errors.Is(shutdownCtx.Err(), context.DeadlineExceeded) {
+				log.Fatal("graceful shutdown timed out, forcing exit")
+			}
+		}()
+
+		// Start graceful shutdown
+		if err := httpServer.Shutdown(shutdownCtx); err != nil {
 			log.Fatalf("error during shutdown: %v", err)
 		}
 
-		close(idleConnsClosed)
+		serverStopCtx()
 	}()
 
 	// Start server listening
@@ -121,8 +136,8 @@ func main() {
 		return
 	}
 
-	// Wait for idle connections to close
-	<-idleConnsClosed
+	// Wait for shutdown
+	<-serverCtx.Done()
 
-	log.Print("server has been shutdown, and all (idle) connections closed")
+	log.Print("server has been shut down, and all (idle) connections closed")
 }
