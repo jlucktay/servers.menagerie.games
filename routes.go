@@ -16,6 +16,13 @@ func (s *Server) Initialise() {
 
 	// Set a timeout value on the request context (ctx), that will signal through ctx.Done() that the request has timed
 	// out and further processing should be stopped.
+	//
+	// From: https://github.com/go-chi/chi/blob/master/middleware/timeout.go
+	// It's required that you select the ctx.Done() channel to check for the signal
+	// if the context has reached its deadline and return, otherwise the timeout
+	// signal will be just ignored.
+	//
+	// Examples: https://github.com/go-chi/chi/blob/master/_examples/limits/main.go
 	s.Router.Use(middleware.Timeout(time.Second * 10))
 
 	s.Router.Use(middleware.Heartbeat("/ping"))
