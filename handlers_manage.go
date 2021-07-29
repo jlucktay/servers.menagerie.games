@@ -125,6 +125,8 @@ func deleteRunningInstances(ctx context.Context, svc *compute.Service) error {
 				deleteCall := svc.Instances.Delete(viper.GetString("CLOUDSDK_CORE_PROJECT"), loc.Zone, name)
 				deleteCall.Context(ctx)
 
+				log.Printf("starting delete operation on instance '%s'", name)
+
 				if _, err := deleteCall.Do(); err != nil {
 					log.Printf("could not delete instance from Compute service: %v", err)
 
