@@ -123,13 +123,30 @@ tmp/.benchmarks-ran.sentinel: $(shell find . -type f -iname "*.go") go.mod go.su
 
 # Lint - re-run if the tests have been re-run (and so, by proxy, whenever the source files have changed).
 # These checks are all read-only and will not make any changes.
-tmp/.linted.sentinel: Dockerfile .golangci.yaml .hadolint.yaml tmp/.tests-passed.sentinel
+tmp/.linted.sentinel: tmp/.linted.docker.sentinel tmp/.linted.gofmt.sentinel tmp/.linted.go.vet.sentinel \
+  tmp/.linted.golangci-lint.sentinel
+> mkdir -p $(@D)
+> touch $@
+
+tmp/.linted.docker.sentinel: Dockerfile .hadolint.yaml
 > mkdir -p $(@D)
 > docker run --env=XDG_CONFIG_HOME=/etc --interactive --pull=always --rm \
   --volume="$(shell pwd)/.hadolint.yaml:/etc/hadolint.yaml:ro" hadolint/hadolint hadolint --verbose - < Dockerfile
+> touch $@
+
+tmp/.linted.gofmt.sentinel: tmp/.tests-passed.sentinel
+> mkdir -p $(@D)
 > find . -type f -iname "*.go" -exec gofmt -d -e -l -s "{}" + \
   | awk '{ print } END { if (NR != 0) { print "Please run \"make gofmt\" to fix these issues!"; exit 1 } }'
+> touch $@
+
+tmp/.linted.go.vet.sentinel: tmp/.tests-passed.sentinel
+> mkdir -p $(@D)
 > go vet ./...
+> touch $@
+
+tmp/.linted.golangci-lint.sentinel: .golangci.yaml tmp/.tests-passed.sentinel
+> mkdir -p $(@D)
 > docker run --interactive --pull=always --rm --volume="$(shell pwd):/app:ro" --workdir=/app golangci/golangci-lint \
   golangci-lint run --verbose
 > touch $@
