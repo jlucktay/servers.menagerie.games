@@ -21,28 +21,16 @@ ENV CGO_ENABLED=0
 # Use Go modules
 ENV GO111MODULE=on
 
-# Precompile the entire Go standard library into a Docker cache layer: useful for other projects too!
-# See https://www.reddit.com/r/golang/comments/hj4n44/improved_docker_go_module_dependency_cache_for/
-RUN go install -ldflags="-buildid= -w" -trimpath -v std
-
 WORKDIR /go/src/go.jlucktay.dev/servers.menagerie.games
-
-# This will save Go dependencies in the Docker cache, until/unless they change
-COPY go.mod go.sum ./
-RUN go mod download -x
-
-# Download and precompile all third party libraries
-RUN go mod graph \
-  | awk '$1 !~ "@" { print $2 }' \
-  | xargs --no-run-if-empty --verbose \
-  go get -ldflags="-buildid= -w" -trimpath -v
 
 # Add the sources
 COPY . .
 
-# Compile! Should only compile our project since everything else has been precompiled by now, and future
-# (re)compilations will leverage the same cached layer(s)
-RUN go build -ldflags="-buildid= -w" -trimpath -o /bin/smg -v go.jlucktay.dev/servers.menagerie.games
+# Compile! With the trick below, Go's build cache is kept between builds.
+# https://github.com/golang/go/issues/27719#issuecomment-514747274
+RUN --mount=type=cache,target=/go/pkg/mod \
+  --mount=type=cache,target=/root/.cache/go-build \
+  go build -ldflags="-buildid= -w" -trimpath -v -o /bin/smg
 
 FROM scratch AS runner
 

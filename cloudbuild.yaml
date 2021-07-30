@@ -1,7 +1,0 @@
-# Reference: https://cloud.google.com/cloud-build/docs/build-config
-
-steps:
-  - name: gcr.io/kaniko-project/executor:latest
-    args:
-      - --cache=true
-      - --destination=$_DESTINATION

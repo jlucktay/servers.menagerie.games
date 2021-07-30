@@ -54,9 +54,11 @@ all: test lint build ## Test and lint and build.
 MAKEFLAGS += --jobs
 
 binary_name := smg
-gcp_project ?= $(CLOUDSDK_CORE_PROJECT)
-gcp_region ?= $(CLOUDSDK_RUN_REGION)
-image_repository ?= gcr.io/$(gcp_project)/$(shell basename $(CURDIR))
+gcp_project := $(CLOUDSDK_CORE_PROJECT)
+gcp_region := $(CLOUDSDK_RUN_REGION)
+image_repository := europe-docker.pkg.dev/$(gcp_project)/smg-eu
+image_name := $(shell basename $(CURDIR))
+image := $(image_repository)/$(image_name)
 
 # Adjust the width of the first column by changing the '-20s' value in the printf pattern.
 help:
@@ -79,10 +81,11 @@ lint: tmp/.linted.sentinel ## Lint the Dockerfile and all of the Go code. Will a
 build: out/image-id ## [DEFAULT] Build the Docker image. Will also test and lint.
 
 build-binary: $(binary_name) ## Build a bare binary only, without a Docker image wrapped around it.
-build-cloud: tmp/.cloud-built.sentinel ## Build the image with Google Cloud Build.
-deploy: tmp/.cloud-deployed.sentinel ## Deploy the image in Google Container Registry to Cloud Run.
 
-.PHONY: all test test-cover bench lint build build-binary build-cloud deploy
+push: tmp/.image-pushed.sentinel ## Push the built image to Artifact Registry on Google Cloud.
+deploy: tmp/.cloud-deployed.sentinel ## Deploy the image in Artifact Registry to Cloud Run.
+
+.PHONY: all test test-cover bench lint build build-binary push deploy
 
 clean: ## Clean up the built binary, test coverage, and the temp and output sub-directories.
 > go clean -x -v
@@ -91,7 +94,7 @@ clean: ## Clean up the built binary, test coverage, and the temp and output sub-
 
 clean-docker: ## Clean up any local built Docker images and the volume used for caching golangci-lint.
 > docker images \
-  --filter=reference=$(image_repository) \
+  --filter=reference=$(image) \
   --no-trunc --quiet | sort --ignore-case --unique | xargs -n 1 docker rmi --force
 > docker volume rm golangci-lint-cache || true
 > rm -f out/image-id
@@ -159,7 +162,7 @@ gofmt: ## Runs 'gofmt -s' to format and simplify all Go code.
 # Docker image - re-build if the lint output is re-run (and so, by proxy, whenever the source files have changed).
 out/image-id: tmp/.linted.sentinel
 > mkdir -p $(@D)
-> image_id="$(image_repository):$(shell uuidgen)"
+> image_id="$(image):$(shell uuidgen)"
 > DOCKER_BUILDKIT=1 docker build --tag="$${image_id}" .
 > echo "$${image_id}" > out/image-id
 
@@ -171,20 +174,18 @@ run-local: out/image-id .env ## Run up the local image.
 > docker run --interactive --publish 8080:8080 --rm --tty --volume "$(shell pwd)/.env:/.env:ro" $$(< out/image-id)
 .PHONY: run-local
 
-tmp/.cloud-built.sentinel: Dockerfile tmp/.linted.sentinel .gcloudignore cloudbuild.yaml *.gohtml
+tmp/.image-pushed.sentinel: out/image-id
 > mkdir -p $(@D)
-> gcloud builds submit \
-  --config cloudbuild.yaml \
-  --project="$(gcp_project)" \
-  --substitutions "_DESTINATION=$(image_repository)"
+> docker tag $$(< out/image-id) $(image):latest
+> docker push $(image):latest
 > touch $@
 
-tmp/.cloud-deployed.sentinel: tmp/.cloud-built.sentinel .gcloudignore tmp/flags.yaml
+tmp/.cloud-deployed.sentinel: tmp/.image-pushed.sentinel .gcloudignore tmp/flags.yaml
 > mkdir -p $(@D)
 > gcloud run deploy $(binary_name) \
   --allow-unauthenticated \
   --flags-file=tmp/flags.yaml \
-  --image="$(image_repository)" \
+  --image="$(image)" \
   --project="$(gcp_project)" \
   --region="$(gcp_region)" \
   --service-account="$(CLOUD_RUN_SERVICE_ACCOUNT)"
