@@ -89,10 +89,11 @@ clean: ## Clean up the built binary, test coverage, and the temp and output sub-
 > rm -rf cover.out tmp out
 .PHONY: clean
 
-clean-docker: ## Clean up any local built Docker images.
+clean-docker: ## Clean up any local built Docker images and the volume used for caching golangci-lint.
 > docker images \
   --filter=reference=$(image_repository) \
   --no-trunc --quiet | sort --ignore-case --unique | xargs -n 1 docker rmi --force
+> docker volume rm golangci-lint-cache || true
 > rm -f out/image-id
 .PHONY: clean-docker
 
@@ -147,8 +148,8 @@ tmp/.linted.go.vet.sentinel: tmp/.tests-passed.sentinel
 
 tmp/.linted.golangci-lint.sentinel: .golangci.yaml tmp/.tests-passed.sentinel
 > mkdir -p $(@D)
-> docker run --interactive --pull=always --rm --volume="$(shell pwd):/app:ro" --workdir=/app golangci/golangci-lint \
-  golangci-lint run --verbose
+> docker run --env=XDG_CACHE_HOME=/go/cache --interactive --pull=always --rm --volume="$(shell pwd):/app:ro" \
+  --volume=golangci-lint-cache:/go --workdir=/app golangci/golangci-lint golangci-lint run --verbose
 > touch $@
 
 gofmt: ## Runs 'gofmt -s' to format and simplify all Go code.
