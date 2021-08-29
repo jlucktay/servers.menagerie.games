@@ -104,6 +104,10 @@ clean-gcr: ## Clean up any remotely built images.
 > gcloud container images list-tags $(image_repository) --filter "NOT tags:*" --format="get(digest)" \
   | awk '{ print "$(image_repository)@"$$1 }' \
   | xargs -n 100 gcloud container images delete --quiet
+> gcloud artifacts docker images list $(image_repository) \
+  --filter "NOT tags:*" --format="value(version)" --include-tags \
+  | awk '{ print "$(image)@"$$1 }' \
+  | xargs -n 100 gcloud artifacts docker images delete --quiet
 .PHONY: clean-gcr
 
 clean-all: clean clean-docker clean-gcr ## Clean all of the things.
