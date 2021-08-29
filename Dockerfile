@@ -9,7 +9,7 @@ RUN useradd -u 10001 scratchuser
 
 # Install/update the common CA certificates package now, and blag it later
 RUN apt-get update \
-  && apt-get install --assume-yes --no-install-recommends ca-certificates \
+  && DEBIAN_FRONTEND=noninteractive apt-get install --assume-yes --no-install-recommends ca-certificates \
   && apt-get autoremove --assume-yes \
   && apt-get clean \
   && rm --force --recursive /root/.cache \
