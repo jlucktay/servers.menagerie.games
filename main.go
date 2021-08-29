@@ -39,6 +39,11 @@ func main() {
 	// Set up address flag using port from above
 	pflag.String("address", ":"+port, "Server address to listen on")
 
+	// You plug in a new board and turn on the power.
+	// If you see smoke coming from the board, turn off the power.
+	// You don't have to do any more testing.
+	pflag.Bool("smoke", false, "smoke test only; won't start a server")
+
 	// Lock 'em in and bind 'em
 	pflag.Parse()
 
@@ -82,6 +87,13 @@ func main() {
 	if viper.GetString("google_client_id") == "" {
 		log.Fatal("missing Google Client ID; set SMG_GOOGLE_CLIENT_ID in environment " +
 			"or GOOGLE_CLIENT_ID in the '.env' file")
+	}
+
+	// If we're doing a smoke test, don't proceed past this point
+	if viper.GetBool("smoke") {
+		log.Println("smoke test OK! 👋")
+
+		return
 	}
 
 	// Config is done, so set up the server next
