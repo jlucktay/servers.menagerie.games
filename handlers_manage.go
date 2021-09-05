@@ -95,7 +95,15 @@ func (s *Server) managePostHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	buf := bytes.NewBufferString("POST /manage\n" + template)
+	ip, errCreate := createInstanceFromTemplate(r.Context(), svc, template, "TODO: location string; get default")
+	if errCreate != nil {
+		log.Printf("could not create new instance: %v", errCreate)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+
+		return
+	}
+
+	buf := bytes.NewBufferString(fmt.Sprintf("POST /manage\nTemplate: %s\nIP: %s", template, ip))
 
 	if _, err := w.Write(buf.Bytes()); err != nil {
 		log.Printf("could not write bytes to response: %v", err)
@@ -157,4 +165,9 @@ func getLatestTemplate(ctx context.Context, svc *compute.Service) (string, error
 	}
 
 	return list.Items[0].Name, nil
+}
+
+// Returns the public IP address of the created instance.
+func createInstanceFromTemplate(ctx context.Context, svc *compute.Service, template, location string) (string, error) {
+	return "<placeholder IP address>", nil
 }
