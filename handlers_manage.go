@@ -38,6 +38,15 @@ func (s *Server) manageGetHandler() http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		init.Do(func() {
+			var err error
+			locations, err = getLocationsFromStorage(r.Context(), s.Config.Manage.Bucket, s.Config.Manage.Object)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				log.Print(err)
+
+				return
+			}
+
 			svc, err := compute.NewService(r.Context())
 			if err != nil {
 				log.Printf("could not create new Compute service: %v", err)
@@ -55,9 +64,11 @@ func (s *Server) manageGetHandler() http.HandlerFunc {
 			}
 
 			data := struct {
-				Template string
+				Template  string
+				Locations []location
 			}{
-				Template: template,
+				Template:  template,
+				Locations: locations,
 			}
 			if err := formatTemplate("manage_get.gohtml", data, &pageBytes); err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -85,15 +96,6 @@ func (s *Server) managePostHandler(w http.ResponseWriter, r *http.Request) {
 	)
 
 	init.Do(func() {
-		var err error
-		locations, err = getLocationsFromStorage(r.Context(), s.Config.Manage.Bucket, s.Config.Manage.Object)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			log.Print(err)
-
-			return
-		}
-
 		data := struct {
 			Locations []location
 		}{
