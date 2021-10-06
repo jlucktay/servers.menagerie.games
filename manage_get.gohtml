@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Menagerie Cracktorio Lab - Server Management</title>
+  </head>
+  <body>
+    <h1>GET /manage</h1>
+    {{ if .Template }}
+      Template: <pre>{{ .Template }}</pre>
+      <hr />
+      <form action="/manage" method="post">
+        <ul class="location">
+          {{ if .Locations }}
+            <fieldset>
+              <legend>Choose the server's location</legend>
+
+              {{ range .Locations }}
+                {{/* <li>{{ .Location }} = {{ .Zone }}{{ if .Default }} (default){{ end }}</li> */}}
+                <input type="radio" id="{{ .Zone }}" name="location">
+                <label for="{{ .Zone }}">{{ .Location }}</label><br/>
+              {{ end }}
+            </fieldset>
+          {{ else }}
+            <li>No location data</li>
+          {{ end }}
+        </ul>
+        <li class="button">
+          <button type="submit">Launch the server</button>
+        </li>
+      </form>
+    {{ else }}
+      No instance template(s) found
+    {{ end }}
+  </body>
+</html>

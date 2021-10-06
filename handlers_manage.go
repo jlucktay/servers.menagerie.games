@@ -13,7 +13,7 @@ import (
 	"google.golang.org/api/compute/v1"
 )
 
-var ErrNoInstTemplates = errors.New("no instance templates found")
+var ErrNoInstTemplates = errors.New("no instance template(s) found")
 
 var locations []location
 
@@ -38,21 +38,28 @@ func (s *Server) manageGetHandler() http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		init.Do(func() {
-			var err error
-			locations, err = getLocationsFromStorage(r.Context(), s.Config.Manage.Bucket, s.Config.Manage.Object)
+			svc, err := compute.NewService(r.Context())
 			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				log.Print(err)
+				log.Printf("could not create new Compute service: %v", err)
+				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+
+				return
+			}
+
+			template, err := getInstanceTemplate(r.Context(), svc)
+			if err != nil {
+				log.Printf("could not get latest template: %v", err)
+				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 
 				return
 			}
 
 			data := struct {
-				Locations []location
+				Template string
 			}{
-				Locations: locations,
+				Template: template,
 			}
-			if err := formatTemplate("manage.gohtml", data, &pageBytes); err != nil {
+			if err := formatTemplate("manage_get.gohtml", data, &pageBytes); err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				log.Print(err)
 
@@ -72,6 +79,34 @@ func (s *Server) manageGetHandler() http.HandlerFunc {
 }
 
 func (s *Server) managePostHandler(w http.ResponseWriter, r *http.Request) {
+	var (
+		init      sync.Once
+		pageBytes []byte
+	)
+
+	init.Do(func() {
+		var err error
+		locations, err = getLocationsFromStorage(r.Context(), s.Config.Manage.Bucket, s.Config.Manage.Object)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			log.Print(err)
+
+			return
+		}
+
+		data := struct {
+			Locations []location
+		}{
+			Locations: locations,
+		}
+		if err := formatTemplate("manage.gohtml", data, &pageBytes); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			log.Print(err)
+
+			return
+		}
+	})
+
 	svc, err := compute.NewService(r.Context())
 	if err != nil {
 		log.Printf("could not create new Compute service: %v", err)
@@ -87,7 +122,7 @@ func (s *Server) managePostHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	template, err := getLatestTemplate(r.Context(), svc)
+	template, err := getInstanceTemplate(r.Context(), svc)
 	if err != nil {
 		log.Printf("could not get latest template: %v", err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -149,7 +184,9 @@ func deleteRunningInstances(ctx context.Context, svc *compute.Service) error {
 	return nil
 }
 
-func getLatestTemplate(ctx context.Context, svc *compute.Service) (string, error) {
+// getInstanceTemplate will look up compute instance templates for the configured Google Cloud Project, and attempt to
+// return the name of the most recently created one.
+func getInstanceTemplate(ctx context.Context, svc *compute.Service) (string, error) {
 	tmplListCall := svc.InstanceTemplates.List(viper.GetString("CLOUDSDK_CORE_PROJECT"))
 	tmplListCall.Context(ctx)
 	tmplListCall.MaxResults(1)
