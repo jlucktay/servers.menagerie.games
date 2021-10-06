@@ -7,6 +7,13 @@ import (
 	"net/http"
 )
 
+//go:embed favicon.ico
+var faviconIco []byte
+
+func (s *Server) faviconHandler(w http.ResponseWriter, r *http.Request) {
+	serveEmbeddedBytes(faviconIco, w, r)
+}
+
 //go:embed robots.txt
 var robotsTxt []byte
 

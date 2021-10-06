@@ -8,10 +8,6 @@ import (
 	"time"
 )
 
-func (s *Server) faviconHandler(w http.ResponseWriter, r *http.Request) {
-	http.ServeFile(w, r, "favicon.ico")
-}
-
 func (s *Server) rootPageHandler(audience string) http.HandlerFunc {
 	var (
 		init      sync.Once
