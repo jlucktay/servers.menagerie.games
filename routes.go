@@ -30,6 +30,7 @@ func (s *Server) Initialise() {
 
 	s.Router.Get("/", s.rootPageHandler(s.Config.Audience)) // GET /
 	s.Router.Get("/favicon.ico", s.faviconHandler)          // GET /favicon.ico
+	s.Router.Get("/robots.txt", s.robotsTxtHandler)         // GET /robots.txt
 	s.Router.Post("/tokensignin", s.tokenSignInHandler)     // POST /tokensignin
 
 	s.Router.Route("/manage", func(r chi.Router) {
