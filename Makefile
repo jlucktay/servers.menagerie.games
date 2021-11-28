@@ -96,7 +96,7 @@ clean-docker: ## Clean up any local built Docker images and the volume used for 
 > docker images \
   --filter=reference=$(image) \
   --no-trunc --quiet | sort --ignore-case --unique | xargs -n 1 docker rmi --force
-> docker volume rm golangci-lint-cache || true
+> docker volume rm golangci-lint-cache-$(image_name) || true
 > rm -f out/image-id
 .PHONY: clean-docker
 
@@ -156,7 +156,7 @@ tmp/.linted.go.vet.sentinel: tmp/.tests-passed.sentinel
 tmp/.linted.golangci-lint.sentinel: .golangci.yaml tmp/.tests-passed.sentinel
 > mkdir -p $(@D)
 > docker run --env=XDG_CACHE_HOME=/go/cache --interactive --pull=always --rm --volume="$(shell pwd):/app:ro" \
-  --volume=golangci-lint-cache:/go --workdir=/app golangci/golangci-lint golangci-lint run --verbose
+  --volume=golangci-lint-cache-$(image_name):/go --workdir=/app golangci/golangci-lint golangci-lint run --verbose
 > touch $@
 
 gofmt: ## Runs 'gofmt -s' to format and simplify all Go code.
