@@ -11,7 +11,13 @@ import (
 	"google.golang.org/api/idtoken"
 )
 
-var ErrTokenInvalid = errors.New("could not validate ID token")
+var (
+	ErrTokenInvalid          = errors.New("could not validate ID token")
+	ErrTokenAudienceMismatch = errors.New("token audience does not match this app's client ID")
+	ErrTokenIssuer           = errors.New("token was not issued by Google Accounts")
+	ErrTokenExpired          = errors.New("token already expired")
+	ErrTokenFromFuture       = errors.New("token is issued in the future")
+)
 
 // verifyIntegrity checks that the criteria specified at the following link are satisfied:
 // https://developers.google.com/identity/sign-in/web/backend-auth#verify-the-integrity-of-the-id-token
@@ -34,14 +40,14 @@ func verifyIntegrity(ctx context.Context, idToken, audience string) (*idtoken.Pa
 	*/
 	// This check should already have been made inside idtoken.Validate() above.
 	if idtPayload.Audience != audience {
-		return nil, fmt.Errorf("token audience '%s' does not match this app's client ID", idtPayload.Audience)
+		return nil, fmt.Errorf("%w: %s", ErrTokenAudienceMismatch, idtPayload.Audience)
 	}
 
 	/*
 		The value of `iss` in the ID token is equal to `accounts.google.com` or `https://accounts.google.com`.
 	*/
 	if !strings.HasSuffix(idtPayload.Issuer, "accounts.google.com") {
-		return nil, fmt.Errorf("token was issued by '%s' and not by Google Accounts", idtPayload.Issuer)
+		return nil, fmt.Errorf("%w: %s", ErrTokenIssuer, idtPayload.Issuer)
 	}
 
 	/*
@@ -49,13 +55,13 @@ func verifyIntegrity(ctx context.Context, idToken, audience string) (*idtoken.Pa
 	*/
 	tokenExpires := time.Unix(idtPayload.Expires, 0)
 	if tokenExpires.Before(time.Now()) {
-		return nil, fmt.Errorf("token already expired at '%s'", tokenExpires)
+		return nil, fmt.Errorf("%w: %s", ErrTokenExpired, tokenExpires)
 	}
 
 	// Make sure the ID token was issued in the past
 	tokenIssuedAt := time.Unix(idtPayload.IssuedAt, 0)
 	if tokenIssuedAt.After(time.Now()) {
-		return nil, fmt.Errorf("token is issued in the future at '%s'", tokenIssuedAt)
+		return nil, fmt.Errorf("%w: %s", ErrTokenFromFuture, tokenIssuedAt)
 	}
 
 	/*
