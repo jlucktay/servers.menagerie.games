@@ -2,7 +2,7 @@ package main_test
 
 import (
 	"context"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -26,7 +26,7 @@ func TestBodyContains(t *testing.T) {
 			Audience:           "client_id.apps.googleusercontent.com",
 		},
 		Router: chi.NewRouter(),
-		TokenVerifier: func(ctx context.Context, idToken, audience string) (*idtoken.Payload, error) {
+		TokenVerifier: func(_ctx context.Context, _idToken, _audience string) (*idtoken.Payload, error) {
 			return &idtoken.Payload{
 				Claims: map[string]interface{}{
 					"foo":   "bar",
@@ -85,7 +85,7 @@ func TestBodyContains(t *testing.T) {
 			is.NoErr(err)
 			is.Equal(tC.expectedStatus, resp.StatusCode)
 
-			respBody, err := ioutil.ReadAll(resp.Body)
+			respBody, err := io.ReadAll(resp.Body)
 			is.NoErr(err)
 			t.Cleanup(func() { is.NoErr(resp.Body.Close()) })
 

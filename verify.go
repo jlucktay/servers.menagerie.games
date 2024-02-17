@@ -30,7 +30,7 @@ func verifyIntegrity(ctx context.Context, idToken, audience string) (*idtoken.Pa
 	*/
 	idtPayload, err := idtoken.Validate(ctx, idToken, audience)
 	if err != nil {
-		return nil, fmt.Errorf("%v: %w", ErrTokenInvalid, err)
+		return nil, fmt.Errorf("%w: %w", ErrTokenInvalid, err)
 	}
 
 	/*

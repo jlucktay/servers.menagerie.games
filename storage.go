@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"path"
 
@@ -37,7 +37,7 @@ func getLocationsFromStorage(ctx context.Context, bucket, object string) ([]loca
 		}
 	}()
 
-	data, err := ioutil.ReadAll(rc)
+	data, err := io.ReadAll(rc)
 	if err != nil {
 		return nil, fmt.Errorf("could not read Storage object %s: %w", path.Join(bucket, object), err)
 	}
