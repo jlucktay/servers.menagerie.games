@@ -207,6 +207,8 @@ func getInstanceTemplate(ctx context.Context, svc *compute.Service) (string, err
 }
 
 // Returns the public IP address of the created instance.
-func createInstanceFromTemplate(ctx context.Context, svc *compute.Service, template, location string) (string, error) {
+func createInstanceFromTemplate(_ctx context.Context, _svc *compute.Service, _template, _location string) (string,
+	error,
+) {
 	return "<placeholder IP address>", nil
 }

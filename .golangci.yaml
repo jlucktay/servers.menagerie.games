@@ -63,6 +63,12 @@ linters-settings:
 
   revive:
     min-confidence: 0
+    rules:
+      - name: unused-parameter
+        severity: warning
+        disabled: false
+        arguments:
+          - allowRegex: '^_'
 
   unparam:
     check-exported: true
@@ -122,7 +128,7 @@ linters:
     - wsl
 
 output:
-  format: tab
+  format: colored-tab
   print-issued-lines: true
   print-linter-name: true
   uniq-by-line: true

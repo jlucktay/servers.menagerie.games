@@ -1,4 +1,4 @@
-FROM golang:1.16 AS builder
+FROM golang:1.22 AS builder
 
 # Set some shell options for using pipes and such
 SHELL [ "/bin/bash", "-euo", "pipefail", "-c" ]

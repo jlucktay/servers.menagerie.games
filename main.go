@@ -1,3 +1,4 @@
+// Package main holds the core server logic.
 package main
 
 import (
